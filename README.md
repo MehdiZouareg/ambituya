@@ -44,16 +44,23 @@ Before getting started, you need to have a Tuya IoT Developer account. If you do
 3. Fill in the file with your information as follows:
 
 ```yaml
+# Tuya Configuration
 accessID: "YOUR_ACCESS_ID"
 accessKey: "YOUR_ACCESS_KEY"
-appName: "YOUR_PROJECT_NAME"
-debugMode: false #Enables debug mode for tuya connector
+appName: "YOUR_APP_NAME"
+debugMode: false
+
+# Devices
 tuya:
-  registeredDevices:
-    - Name: "Device Name 1" #You can choose your own name here
-      ID: "DEVICE_ID_1"
-    - Name: "Device Name 2"
-      ID: "DEVICE_ID_2"
+  devices:
+    - name: "SOME_DEVICE_NAME"
+      id: "SOME_ID"
+    - name: "SOME_ANOTHER_DEVICE"
+      id: "SOME_ID"
+
+# Ambilight Configuration
+ambilight:
+  refreshRate: 5000 # In milliseconds
 ```
 
 ### Side notes
