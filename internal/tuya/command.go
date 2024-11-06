@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tuya/tuya-connector-go/connector"
-	"github.com/tuya/tuya-connector-go/connector/logger"
 )
 
 func Switch(id string, state bool) error {
@@ -22,7 +22,7 @@ func Switch(id string, state bool) error {
 		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", id)),
 		connector.WithPayload([]byte(command)))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
+		log.Error().Err(err).Msg("got error while sending switch command to device")
 		return err
 	}
 
@@ -35,7 +35,7 @@ func CastCommandToID(id, command string) error {
 		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", id)),
 		connector.WithPayload([]byte(command)))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
+		log.Error().Err(err).Msg("got error while casting command to device")
 		return err
 	}
 

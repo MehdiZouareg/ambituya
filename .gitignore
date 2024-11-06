@@ -5,7 +5,7 @@ build/
 logs/
 
 # Ignore specific executable files
-ambituya-*.exe
+ambituya*.exe
 
 .DS_Store
 *.log

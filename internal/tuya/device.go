@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tuya/tuya-connector-go/connector"
-	"github.com/tuya/tuya-connector-go/connector/logger"
 )
 
 var v1 InstructionSet
@@ -133,7 +133,7 @@ func GetDevicesList(ids []string) ([]Device, error) {
 func (d *Device) Switch() error {
 	status, err := d.GetDeviceStatus("switch_led")
 	if err != nil {
-		return err.(error)
+		return err
 	}
 	command := fmt.Sprintf(`{
 		"commands": [
@@ -148,7 +148,7 @@ func (d *Device) Switch() error {
 		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", d.ID)),
 		connector.WithPayload([]byte(command)))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
+		log.Error().Err(err).Msg("got error while sending switch command to device")
 		return err
 	}
 

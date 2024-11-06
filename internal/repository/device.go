@@ -6,18 +6,17 @@ import (
 	"io"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"github.com/tuya/tuya-connector-go/connector"
-	"github.com/tuya/tuya-connector-go/connector/logger"
 	"github.com/tuya/tuya-connector-go/example/model"
 )
 
 type Response map[string]interface{}
 
-type DeviceError struct {
-}
+type DeviceError struct{}
 
 func (d *DeviceError) Process(ctx context.Context, code int, msg string) {
-	logger.Log.Error(code, msg)
+	log.Error().Int("code", code).Msg(msg)
 }
 
 func GetDevice(c *gin.Context) {
@@ -29,7 +28,7 @@ func GetDevice(c *gin.Context) {
 		connector.WithResp(resp),
 		connector.WithErrProc(1102, &DeviceError{}))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
+		log.Error().Err(err).Msg("got error while retrieving device")
 		c.Abort()
 		return
 	}
@@ -46,7 +45,7 @@ func PostDeviceCmd(c *gin.Context) {
 		connector.WithPayload(body),
 		connector.WithResp(resp))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
+		log.Error().Err(err).Msg("got error while sending command to device")
 		c.Abort()
 		return
 	}

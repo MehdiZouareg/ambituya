@@ -9,8 +9,8 @@ import (
 
 	"github.com/MehdiZouareg/ambituya/config"
 	"github.com/kbinani/screenshot"
+	"github.com/rs/zerolog/log"
 	"github.com/tuya/tuya-connector-go/connector"
-	"github.com/tuya/tuya-connector-go/connector/logger"
 
 	colors "gitlab.com/ethanbakerdev/colors"
 )
@@ -77,7 +77,7 @@ func Ambilight(cfg *config.Config) {
 				connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", device.ID)),
 				connector.WithPayload([]byte(command)))
 			if err != nil {
-				logger.Log.Errorf("err:%s", err.Error())
+				log.Error().Err(err).Msg("got error while reaching tuya api")
 				return
 			}
 		}
