@@ -1,22 +1,18 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/tuya/tuya-connector-go/connector"
-	"github.com/tuya/tuya-connector-go/connector/constant"
 	"github.com/tuya/tuya-connector-go/connector/env"
-	"github.com/tuya/tuya-connector-go/connector/env/extension"
 	"github.com/tuya/tuya-connector-go/connector/httplib"
-	"github.com/tuya/tuya-connector-go/connector/logger"
 	"github.com/tuya/tuya-connector-go/example/messaging"
 
 	"github.com/MehdiZouareg/ambituya/config"
@@ -32,111 +28,74 @@ func main() {
 		log.Fatal().Err(err).Msg("couldnt load initialization config")
 	}
 
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if config.DebugMode {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("Debug mode is enabled")
+	}
+
 	// Init Tuya Connector
+	log.Info().Msg("Initializing Tuya connector")
 	connector.InitWithOptions(
 		env.WithApiHost(httplib.URL_EU),
 		env.WithMsgHost(httplib.MSG_EU),
 		env.WithAccessID(config.AccessID),
 		env.WithAccessKey(config.AccessKey),
 		env.WithAppName(config.AppName),
-		env.WithDebugMode(false),
+		env.WithDebugMode(config.DebugMode),
 	)
 
 	// Declare flag variables
-	var deviceID string
-	var command string
-	var switchOn string
+	var deviceID, command, switchOn string
 
 	// Flag definition
 	flag.StringVar(&deviceID, "device-id", "", "Specify the device ID")
 	flag.StringVar(&command, "command", "", "Specify the command")
 	flag.StringVar(&switchOn, "switch", "", "Specify the command")
-
 	flag.Parse()
 
-	// Check whether flags are used
+	// Check whether flags are used, if not we just to send one command to our devices and shutdown process
 	if deviceID == "" && command == "" {
-		// fmt.Println("No flags provided.")
+		log.Info().Msg("No command-line flags provided, running in normal mode")
 
-		logger.Log.SetLevel(logger.ERROR)
-
-		tuya.RegisteredDevices = []tuya.Device{
-			{
-				Name: "LEDS",
-				ID:   "545000508cce4ee25ac7",
-			}, {
-				Name: "Salon",
-				ID:   "06325004e868e74c5f14",
-			},
+		if len(config.TuyaRegisteredDevices) == 0 {
+			log.Fatal().Msg("no devices configured in config file.")
 		}
 
-		go systray.Systray()
+		go func() {
+			log.Info().Msg("starting system tray...")
+			systray.Systray(config)
+		}()
 
-		go messaging.Listener()
+		go func() {
+			log.Info().Msg("Starting message listener...")
+			messaging.Listener()
+		}()
 
-		go effect.Ambilight(tuya.RegisteredDevices)
+		go func() {
+			log.Info().Msg("Starting Ambilight effect...")
+			effect.Ambilight(config)
+		}()
 
-		waitSignal()
+		waitForExitSignal()
 	} else {
 		if switchOn != "" {
 			st, err := strconv.ParseBool(switchOn)
 			if err != nil {
 				os.Exit(0)
 			}
-			Switch(deviceID, st)
+			tuya.Switch(deviceID, st)
 		}
 
-		CastCommandToID(deviceID, command)
+		tuya.CastCommandToID(deviceID, command)
 
 		os.Exit(0)
 	}
 }
 
-func Switch(id string, state bool) error {
-	command := fmt.Sprintf(`{
-		"commands": [
-		{
-			"code": "switch_led",
-			"value": %v
-	  	}
-	]}`, state)
-
-	err := connector.MakePostRequest(
-		context.Background(),
-		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", id)),
-		connector.WithPayload([]byte(command)))
-	if err != nil {
-		logger.Log.Errorf("err:%s", err.Error())
-		return err
-	}
-
-	return nil
-}
-
-func CastCommandToID(id, command string) error {
-	fmt.Printf("\n\nSending %v to %v", command, id)
-
-	err := connector.MakePostRequest(
-		context.Background(),
-		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", id)),
-		connector.WithPayload([]byte(command)))
-	if err != nil {
-		logger.Log.Errorf("err:%s", err.(error).Error())
-		return err.(error)
-	}
-
-	return nil
-}
-
-func waitSignal() {
-	quitCh := make(chan os.Signal, 1)
-	signal.Notify(quitCh, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
-	for {
-		select {
-		case c := <-quitCh:
-			extension.GetMessage(constant.TUYA_MESSAGE).Stop()
-			logger.Log.Infof("receive sig:%v, shutdown the http server...", c.String())
-			return
-		}
-	}
+func waitForExitSignal() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigChan
+	log.Info().Str("Signal", sig.String()).Msg("Received termination signal, shutting down gracefully")
 }

@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/MehdiZouareg/ambituya/config"
 	"github.com/MehdiZouareg/ambituya/internal/tuya"
 	"github.com/getlantern/systray"
 )
 
-func Systray() {
+func Systray(cfg *config.Config) {
+	for _, d := range cfg.TuyaRegisteredDevices {
+		registeredDevices = append(registeredDevices, tuya.Device{
+			Name: d.Name,
+			ID:   d.ID,
+		})
+	}
 	systray.Run(onReady, onExit)
 }
 
+var registeredDevices []tuya.Device
 var menuItemsPtr []*systray.MenuItem
-var menuOptions []MenuOption
-var menuItems []MenuItem
-var programPath string
 
 type MenuOption struct {
 	label    string
@@ -34,7 +39,7 @@ type MenuItemType int64
 
 const (
 	Choice    MenuItemType = 0
-	Separator              = 1
+	Separator MenuItemType = 1
 )
 
 func onReady() {
@@ -55,7 +60,7 @@ func onReady() {
 	// SWITCH LIGHTS
 	///////////////////////////////////////////////////////////////////////////////
 
-	for _, dev := range tuya.RegisteredDevices {
+	for _, dev := range registeredDevices {
 		menuItem := MenuItem{
 			label:        fmt.Sprintf("ON/OFF %v", dev.Name),
 			command:      dev.Switch,
@@ -85,18 +90,6 @@ func onReady() {
 			continue
 		}
 		menuItemPtr := systray.AddMenuItem(options[indexOption].label, options[indexOption].label)
-
-		// var icon []byte
-		// status, err := v.device.GetDeviceStatus("switch_led")
-		// if err != nil {
-		// 	tuyalogger.Log.Error("ERROR ON GETTING DEVICE STATUS")
-		// 	continue
-		// }
-		// if status != nil {
-		// 	fmt.Printf("%v is %v", v.device.ID, status.(bool))
-		// }
-
-		// menuItemPtr.SetIcon(icon)
 		menuItemsPtr = append(menuItemsPtr, menuItemPtr)
 
 		indexOption++
@@ -141,21 +134,6 @@ func onReady() {
 }
 
 func execute(commands func() error) {
-	// command_array := strings.Split(commands, " ")
-	// command := ""
-	// command, command_array = command_array[0], command_array[1:]
-	// cmd := exec.Command(command, command_array...)
-	// var out bytes.Buffer
-	// cmd.Stdout = &out
-	// err := cmd.Run()
-	// if err != nil {
-	// 	errMsg := fmt.Sprintf("Error executing command: %s", err)
-	// 	fmt.Println(errMsg)
-	// 	dialog.Error(errMsg)
-	// 	// log.Fatal(err)
-	// }
-	// fmt.Printf("Output: %s\n", commands)
-
 	commands()
 }
 

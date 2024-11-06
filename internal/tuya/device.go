@@ -37,6 +37,14 @@ type GetDevicesResponse struct {
 	T       int64       `json:"t"`
 }
 
+type GetDeviceResponse struct {
+	Code    int         `json:"code"`
+	Msg     string      `json:"msg"`
+	Success bool        `json:"success"`
+	Result  interface{} `json:"result"`
+	T       int64       `json:"t"`
+}
+
 func InitInstructionsSets() {
 	v1 = InstructionSet{
 		Name: "v1",
@@ -56,14 +64,6 @@ func InitInstructionsSets() {
 
 var RegisteredDevices []Device
 
-type GetDeviceResponse struct {
-	Code    int         `json:"code"`
-	Msg     string      `json:"msg"`
-	Success bool        `json:"success"`
-	Result  interface{} `json:"result"`
-	T       int64       `json:"t"`
-}
-
 type GetAllDeviceResponse struct {
 	Code    int         `json:"code"`
 	Msg     string      `json:"msg"`
@@ -72,6 +72,7 @@ type GetAllDeviceResponse struct {
 	T       int64       `json:"t"`
 }
 
+// Should retrieve all devices registered on a Tuya Project
 func GetAllDevicesInProject() (*[]Device, error) {
 	resp := &GetAllDeviceResponse{}
 
@@ -80,22 +81,8 @@ func GetAllDevicesInProject() (*[]Device, error) {
 		connector.WithAPIUri("/v2.0/cloud/thing/device"),
 		connector.WithResp(resp))
 	if err != nil {
-		fmt.Println("err:", err.Error())
+		// fmt.Println("err:", err.Error())
 		return nil, err
-	}
-
-	if resp.Result != nil {
-		for k, v := range resp.Result.(map[string]interface{}) {
-			if k == "status" {
-				for _, j := range v.([]interface{}) {
-					Value := j.(map[string]interface{})["value"]
-
-					fmt.Printf("%v", Value)
-
-					return &[]Device{}, nil
-				}
-			}
-		}
 	}
 
 	return nil, errors.New("couldnt get project devices")
@@ -109,7 +96,6 @@ func (d *Device) GetDeviceStatus(code string) (interface{}, error) {
 		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s", d.ID)),
 		connector.WithResp(resp))
 	if err != nil {
-		fmt.Println("err:", err.Error())
 		return "", err
 	}
 
@@ -137,7 +123,6 @@ func GetDevicesList(ids []string) ([]Device, error) {
 			connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%v", i)),
 			connector.WithResp(resp))
 		if err != nil {
-			fmt.Println("err:", err.Error())
 			return nil, err
 		}
 	}
@@ -158,15 +143,13 @@ func (d *Device) Switch() error {
 	  	}
 	]}`, !status.(bool))
 
-	// fmt.Printf("\n\nSending %v to %v", command, d.ID)
-
 	err = connector.MakePostRequest(
 		context.Background(),
 		connector.WithAPIUri(fmt.Sprintf("/v1.0/devices/%s/commands", d.ID)),
 		connector.WithPayload([]byte(command)))
 	if err != nil {
-		logger.Log.Errorf("err:%s", err.(error).Error())
-		return err.(error)
+		logger.Log.Errorf("err:%s", err.Error())
+		return err
 	}
 
 	return nil

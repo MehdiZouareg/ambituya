@@ -7,7 +7,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/MehdiZouareg/ambituya/internal/tuya"
+	"github.com/MehdiZouareg/ambituya/config"
 	"github.com/kbinani/screenshot"
 	"github.com/tuya/tuya-connector-go/connector"
 	"github.com/tuya/tuya-connector-go/connector/logger"
@@ -15,7 +15,11 @@ import (
 	colors "gitlab.com/ethanbakerdev/colors"
 )
 
-func Ambilight(devices []tuya.Device) {
+func Ambilight(cfg *config.Config) {
+
+	devices := cfg.TuyaRegisteredDevices
+	refreshRate := cfg.Ambilight.RefreshRate
+
 	for {
 		// Input Screen Number here
 		bounds := screenshot.GetDisplayBounds(0)
@@ -78,6 +82,6 @@ func Ambilight(devices []tuya.Device) {
 			}
 		}
 
-		time.Sleep(2000 * time.Millisecond)
+		time.Sleep(time.Duration(refreshRate) * time.Millisecond)
 	}
 }
