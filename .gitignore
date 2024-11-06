@@ -1,2 +1,16 @@
-logs/
+# Ignore build directory
 build/
+
+# Ignore logs directory
+logs/
+
+# Ignore specific executable files
+ambituya-*.exe
+
+.DS_Store
+*.log
+*.swp
+*.bak
+*.tmp
+.idea/
+.vscode/
